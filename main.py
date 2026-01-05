@@ -1,7 +1,8 @@
-from opensimplex import OpenSimplex
-import numpy as np
+from opensimplex import OpenSimplex 
+import numpy as np 
 from PIL import Image
 import uuid
+import math
 import os
 
 
@@ -49,16 +50,18 @@ def getColor(heightVal):
 
 
 
-def generateMap(height, width, seed, scale, octaves, bias, persistance, lacunarity, name):
+def generateMap(width = 256, height = 256, seed = uuid.uuid1().int >> 64, bias = 10, octaves = 11, persistance = 0.5, lacunarity = 2):
+    
+    scale = max(width, height) / 4
     heightMap = np.empty((height, width), dtype=np.short)
     noise = OpenSimplex(seed=seed)
+    
     for y in range(0, height):
         for x in range(0, width):
             amplitude = 1
             frequency = 1
             noiseHeight = 0
 
-          
             for octave in range(0, octaves):
                 sampleX = x / scale * frequency
                 sampleY = y / scale * frequency
@@ -69,26 +72,19 @@ def generateMap(height, width, seed, scale, octaves, bias, persistance, lacunari
                 amplitude *= persistance
                 frequency *= lacunarity
                 heightMap[y][x] = (noiseHeight + 1) * 128
-
-           
-            distX = abs(width / 2 - x)
-            distY = abs(height / 2 - y)
-            dist = max(distX, distY)
-            maxWidth = width / 2 - bias
-            delta = dist / maxWidth
-            gradient = delta ** 2
-            heightMap[y][x] *= max(0.0, 1.0 - gradient)
-
-
             
+            x_falloff = -((x-(width/2))**2)/(4**((math.log(width)/math.log(2))-1)) + 1
+            y_falloff = -((y-(height/2))**2)/(4**((math.log(height)/math.log(2))-1)) + 1
+            heightMap[y][x] *= (x_falloff + y_falloff)/2
 
         os.system("cls")
-        print("Generating Map...\n(" + str(height) + "px X " + str(width) + "px)\n--" + str(int(y/height*100))+"%--")
+        print("Generating Map...\n(" + str(width) + "px X " + str(height) + "px)\n--" + str(int(y/height*100))+"%--")
       
     os.system("cls")
-    print("Generating Map...\n(" + str(height) + "px X " + str(width) + "px)\n--Done!--")
-    colourMap = np.zeros((height, width, 3), dtype=np.uint8)
+    print("Generating Map...\n(" + str(width) + "px X " + str(height) + "px)\n--Done!--")
 
+
+    colourMap = np.zeros((height, width, 3), dtype=np.uint8)
     for y in range(0, height):
         for x in range(0, width):
             colourMap[y][x] = getColor(heightMap[y][x])
@@ -106,9 +102,10 @@ def generateMap(height, width, seed, scale, octaves, bias, persistance, lacunari
     image.save(current_dir + "/maps/Map" + str(newindex) + ".png")
     return image
 
-def init(WIDTH = 256, HEIGHT = 256, SEED = uuid.uuid1().int >> 64, BIAS = 10, OCTAVES = 1, PERSISTANCE = 0.5, LACUNARITY = 2):
-  SCALE = max(WIDTH, HEIGHT) / 4
-  generateMap(HEIGHT, WIDTH, SEED, SCALE, OCTAVES, BIAS, PERSISTANCE, LACUNARITY, "MapSeed" + str(SEED))
+
+  
 
 if __name__ == "__main__":
-    init(OCTAVES = 5)
+  iterations = int(input("Please Enter Number Of Run Iterations:  "))
+  for i in range(0, iterations):
+    generateMap(width = 256,  height = 256, seed = uuid.uuid1().int >> 64, bias = 10, octaves = 11, persistance = 0.5, lacunarity = 2)
